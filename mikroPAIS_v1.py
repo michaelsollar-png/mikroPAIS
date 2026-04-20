@@ -634,7 +634,7 @@ class ComparisonApp:
             elif avg_type == "trim":
                 avg = self.trimmed_average(y_filtered, self.trim_ratio.get())
             elif avg_type == "robust":
-                avg = self.robust_average(y_filtered, percentil=0.05)
+                avg = self.robust_average(y_filtered, percentile=0.05)
             elif avg_type == "median":
                 avg = statistics.median(y_filtered)
 
@@ -740,7 +740,7 @@ class ComparisonApp:
                 if len(rows) <= 1 and len(content) > 200:
                     import collections
                     ctrl_counts = collections.Counter(ch for ch in content if ord(ch) < 32)
-                    print(f"Debug: control char counts for {jmeno}: {dict(ctrl_counts)}")
+                    print(f"Debug: control char counts for {name}: {dict(ctrl_counts)}")
                     try:
                         alt_parts = [p.strip().replace('\x03', '') for p in __import__('re').split(r'[\x01-\x1F]+', content) if p.strip()]
                         if len(alt_parts) > 1:
@@ -748,10 +748,10 @@ class ComparisonApp:
                             reader_alt = csv.reader(cleaned_lines_alt, delimiter=';')
                             rows_alt = list(reader_alt)
                             if len(rows_alt) > 1:
-                                print(f"Debug: aggressive split yielded {len(rows_alt)} rows for {jmeno}")
+                                print(f"Debug: aggressive split yielded {len(rows_alt)} rows for {name}")
                                 rows = rows_alt
                     except Exception as e:
-                        print(f"Debug: aggressive split failed for {jmeno}: {e}")
+                        print(f"Debug: aggressive split failed for {name}: {e}")
                 if rows:
                     self.data_rows[name] = rows
                     # Debug: report how many logical rows (measurements) were loaded for this file
