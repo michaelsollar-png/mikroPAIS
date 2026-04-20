@@ -1,6 +1,6 @@
-# 💡 Začátek souboru
+# 💡 Start of file
 # 💡 basic functions_tested 01.11 with OK, all working
-# 💡 Začátek souboru
+# 💡 Start of file
 import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext, ttk
 import csv
@@ -15,19 +15,19 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from functools import partial
 from PIL import Image, ImageTk
 
-def odstranit_ridici_znaky(text):
-        # Odstraní všechny znaky s ASCII < 32 kromě běžných jako \n, \t
+def remove_control_chars(text):
+        # Removes all characters with ASCII < 32 except common ones like \n, \t
         return ''.join(c for c in text if ord(c) >= 32 or c in '\n\t')
 
-class PorovnaniApp:
+class ComparisonApp:
     def __init__(self, root):
         self.root = root
         self.root.title("MIKRO_PAIS v1.0")
         self.root.configure(bg="#f4f4f4")
-        self.adresar_obrazku = ""
+        self.image_dir = ""
 
         style = ttk.Style()
-        style.theme_use('clam')  # 'clam' umožňuje barvy pozadí
+        style.theme_use('clam')  # 'clam' allows background colors
 
         style.configure("My.TButton",
             foreground="white",
@@ -55,8 +55,8 @@ class PorovnaniApp:
 
         self.main_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.main_frame, text="🧪 Measurement")
-        self.panel_navigace = ttk.Frame(self.root)
-        self.panel_navigace.pack(side="top", fill="x", pady=20)
+        self.navigation_panel = ttk.Frame(self.root)
+        self.navigation_panel.pack(side="top", fill="x", pady=20)
 
         self.run_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.run_frame, text="📊 Results")
@@ -68,99 +68,99 @@ class PorovnaniApp:
         self.run_box.tag_configure("ERROR", foreground="orange", font=("Segoe UI", 10, "bold"))
 
 
-        soubory_frame = ttk.LabelFrame(self.main_frame, text="📂 Files")
-        soubory_frame.pack(fill="x", padx=10, pady=5)
+        files_frame = ttk.LabelFrame(self.main_frame, text="📂 Files")
+        files_frame.pack(fill="x", padx=10, pady=5)
 
-        btn_load_csv = ttk.Button(soubory_frame, text="📂 Load CSV + measurements", command=self.nacist_soubory, style="My.TButton")
+        btn_load_csv = ttk.Button(files_frame, text="📂 Load CSV + measurements", command=self.load_files, style="My.TButton")
         btn_load_csv.grid(row=0, column=0, padx=5, pady=5)
-        self.pridej_hint(btn_load_csv, "Load CSV file and measurement data")
+        self.add_hint(btn_load_csv, "Load CSV file and measurement data")
 
-        btn_load_json = ttk.Button(soubory_frame, text="📂Load JSON", command=self.nacist_json, style="My.TButton")
+        btn_load_json = ttk.Button(files_frame, text="📂Load JSON", command=self.load_json, style="My.TButton")
         btn_load_json.grid(row=0, column=1, padx=5, pady=5)
-        self.pridej_hint(btn_load_json, "Load previously saved JSON results")
+        self.add_hint(btn_load_json, "Load previously saved JSON results")
 
-        btn_load_scans = ttk.Button(soubory_frame, text="📂 Load scans", command=self.zvol_adresar_obrazku, style="My.TButton")
+        btn_load_scans = ttk.Button(files_frame, text="📂 Load scans", command=self.choose_image_directory, style="My.TButton")
         btn_load_scans.grid(row=0, column=2, padx=5)
-        self.pridej_hint(btn_load_scans, "Select folder with scan images")
+        self.add_hint(btn_load_scans, "Select folder with scan images")
 
-        btn_save = ttk.Button(soubory_frame, text="Save results", command=self.ulozit_vysledky, style="My.TButton")
+        btn_save = ttk.Button(files_frame, text="Save results", command=self.save_results, style="My.TButton")
         btn_save.grid(row=0, column=3, padx=5, pady=5)
-        self.pridej_hint(btn_save, "Save current results to JSON")
+        self.add_hint(btn_save, "Save current results to JSON")
 
-        btn_export_fail = ttk.Button(soubory_frame, text="📤 Export FAIL scans", command=self.exportuj_fail_obrazky, style="My.TButton")
+        btn_export_fail = ttk.Button(files_frame, text="📤 Export FAIL scans", command=self.export_fail_images, style="My.TButton")
         btn_export_fail.grid(row=0, column=5, padx=5)
-        self.pridej_hint(btn_export_fail, "Export images marked as FAIL in current measurement")
+        self.add_hint(btn_export_fail, "Export images marked as FAIL in current measurement")
 
-        ovladani_frame = ttk.LabelFrame(self.main_frame, text="🎛️ controlls")
-        ovladani_frame.pack(fill="x", padx=10, pady=5)
+        controls_frame = ttk.LabelFrame(self.main_frame, text="🎛️ Controls")
+        controls_frame.pack(fill="x", padx=10, pady=5)
 
-        ttk.Label(ovladani_frame, text="Filtr:").grid(row=0, column=0, padx=5)
-        self.filtr_typ = tk.StringVar(value="ALL")
-        self.filtr_options = ["ALL", "OK", "FAIL", "ERROR"]
-        self.filtr_menu = ttk.OptionMenu(ovladani_frame, self.filtr_typ, self.filtr_options[0], *self.filtr_options, command=self.obnovit_vystup)
-        self.filtr_menu.grid(row=0, column=1, padx=5)
+        ttk.Label(controls_frame, text="Filter:").grid(row=0, column=0, padx=5)
+        self.filter_type = tk.StringVar(value="ALL")
+        self.filter_options = ["ALL", "OK", "FAIL", "ERROR"]
+        self.filter_menu = ttk.OptionMenu(controls_frame, self.filter_type, self.filter_options[0], *self.filter_options, command=self.refresh_output)
+        self.filter_menu.grid(row=0, column=1, padx=5)
 
-        ttk.Label(ovladani_frame, text="Change min/max (%):").grid(row=0, column=2, padx=5)
-        self.procento = tk.StringVar(value="10")
-        ttk.OptionMenu(ovladani_frame, self.procento, "5", "10", "15", "20").grid(row=0, column=3, padx=5)
-        ttk.Button(ovladani_frame, text="Change CSV.csv", command=self.uprav_soubor_ec).grid(row=0, column=4, padx=5)
+        ttk.Label(controls_frame, text="Change min/max (%):").grid(row=0, column=2, padx=5)
+        self.percentage = tk.StringVar(value="10")
+        ttk.OptionMenu(controls_frame, self.percentage, "5", "10", "15", "20").grid(row=0, column=3, padx=5)
+        ttk.Button(controls_frame, text="Change CSV.csv", command=self.edit_ec_file).grid(row=0, column=4, padx=5)
 
-        navigace_frame = ttk.LabelFrame(self.main_frame, text="📊 Measurement")
-        navigace_frame.pack(fill="x", padx=10, pady=5)
+        navigation_frame = ttk.LabelFrame(self.main_frame, text="📊 Measurement")
+        navigation_frame.pack(fill="x", padx=10, pady=5)
 
-        btn_prev = ttk.Button(navigace_frame, text="⬅️ Prev", command=self.predchozi_mereni)
+        btn_prev = ttk.Button(navigation_frame, text="⬅️ Prev", command=self.prev_measurement)
         btn_prev.pack(side=tk.LEFT, padx=5)
-        self.pridej_hint(btn_prev, "previous pallet measurement")
+        self.add_hint(btn_prev, "previous pallet measurement")
 
-        btn_next = ttk.Button(navigace_frame, text="➡️ Next", command=self.dalsi_mereni)
+        btn_next = ttk.Button(navigation_frame, text="➡️ Next", command=self.next_measurement)
         btn_next.pack(side=tk.LEFT, padx=5)
-        self.pridej_hint(btn_next, "next pallet measurement")
+        self.add_hint(btn_next, "next pallet measurement")
 
-        btn_run = ttk.Button(navigace_frame, text="Run", command=self.spustit_analyzu)
+        btn_run = ttk.Button(navigation_frame, text="Run", command=self.run_analysis)
         btn_run.pack(side=tk.LEFT, padx=5)
-        self.pridej_hint(btn_run, "Start analysis of the all pallets measurements")
+        self.add_hint(btn_run, "Start analysis of the all pallets measurements")
 
-        btn_begin = ttk.Button(navigace_frame, text="⏮️ Begin", command=self.skok_na_zacatek)
+        btn_begin = ttk.Button(navigation_frame, text="⏮️ Begin", command=self.jump_to_start)
         btn_begin.pack(side=tk.LEFT, padx=5)
-        self.pridej_hint(btn_begin, "to the first pallet measurement")
+        self.add_hint(btn_begin, "to the first pallet measurement")
 
-        btn_end = ttk.Button(navigace_frame, text="⏭️ End", command=self.skok_na_konec)
+        btn_end = ttk.Button(navigation_frame, text="⏭️ End", command=self.jump_to_end)
         btn_end.pack(side=tk.LEFT, padx=5)
-        self.pridej_hint(btn_end, "to the last pallet measurement")
+        self.add_hint(btn_end, "to the last pallet measurement")
 
-        btn_scuts = ttk.Button(navigace_frame, text="🧭 Shortcuts", command=self.zobraz_zkratky)
+        btn_scuts = ttk.Button(navigation_frame, text="🧭 Shortcuts", command=self.show_shortcuts)
         btn_scuts.pack(side=tk.LEFT, padx=5)
-        self.pridej_hint(btn_scuts, "show keyboard shortcuts")
+        self.add_hint(btn_scuts, "show keyboard shortcuts")
 
-        self.pouze_fail = tk.BooleanVar(value=False)
-        ttk.Checkbutton(navigace_frame, text="Only FAIL", variable=self.pouze_fail).pack(side=tk.LEFT, padx=5)
+        self.only_fail = tk.BooleanVar(value=False)
+        ttk.Checkbutton(navigation_frame, text="Only FAIL", variable=self.only_fail).pack(side=tk.LEFT, padx=5)
 
-        self.mereni_label = tk.Label(navigace_frame, text="Pallet #1", font=("Segoe UI", 14, "bold"), foreground="blue")
-        self.mereni_label.pack(side=tk.LEFT, padx=10)
+        self.measurement_label = tk.Label(navigation_frame, text="Measurement #1", font=("Segoe UI", 14, "bold"), foreground="blue")
+        self.measurement_label.pack(side=tk.LEFT, padx=10)
 
-        btn_allfail = ttk.Button(navigace_frame, text="📤 All fail export", command=self.exportuj_vsechny_fail_obrazky)
+        btn_allfail = ttk.Button(navigation_frame, text="📤 All fail export", command=self.export_all_fail_images)
         btn_allfail.pack(side=tk.LEFT, padx=5)
-        self.pridej_hint(btn_allfail, "run all measurements and export all FAIL scans")
+        self.add_hint(btn_allfail, "run all measurements and export all FAIL scans")
 
-        # ✅ Hlavní vertikální PanedWindow
-        hlavni_paned = tk.PanedWindow(self.main_frame, orient=tk.VERTICAL, sashrelief=tk.RAISED)
-        hlavni_paned.pack(fill="both", expand=True, padx=10, pady=10)
+        # ✅ Main vertical PanedWindow
+        main_paned = tk.PanedWindow(self.main_frame, orient=tk.VERTICAL, sashrelief=tk.RAISED)
+        main_paned.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # ✅ Horní část: výstup + summary
-        vystup_paned = tk.PanedWindow(hlavni_paned, orient=tk.HORIZONTAL, sashrelief=tk.RAISED)
-        hlavni_paned.add(vystup_paned)
+        # ✅ Top section: output + summary
+        output_paned = tk.PanedWindow(main_paned, orient=tk.HORIZONTAL, sashrelief=tk.RAISED)
+        main_paned.add(output_paned)
 
-        self.vystup = scrolledtext.ScrolledText(vystup_paned, width=80, height=20, font=("Consolas", 10))
-        vystup_paned.add(self.vystup, minsize=300)
+        self.output = scrolledtext.ScrolledText(output_paned, width=80, height=20, font=("Consolas", 10))
+        output_paned.add(self.output, minsize=300)
 
-        souhrn_frame = ttk.LabelFrame(vystup_paned, text="📊 Summary", width=300, height=150)
-        vystup_paned.add(souhrn_frame)
+        summary_frame = ttk.LabelFrame(output_paned, text="📊 Summary", width=300, height=150)
+        output_paned.add(summary_frame)
 
-        # self.souhrn_box = tk.Text(souhrn_frame, width=40, height=20, font=("Segoe UI", 10), bg="#f9f9f9", state="disabled")
-        # self.souhrn_box.pack(fill="both", expand=True)
+        # self.summary_box = tk.Text(summary_frame, width=40, height=20, font=("Segoe UI", 10), bg="#f9f9f9", state="disabled")
+        # self.summary_box.pack(fill="both", expand=True)
 
-        self.banner_stav = tk.Label(
-            souhrn_frame,
+        self.status_banner = tk.Label(
+            summary_frame,
             text="",
             font=("Segoe UI", 20, "bold"),
             fg="white",
@@ -171,72 +171,72 @@ class PorovnaniApp:
             pady=50
         )
 
-        self.banner_stav.pack(fill="x", pady=10)
+        self.status_banner.pack(fill="x", pady=10)
 
-        # ✅ Spodní část: vizualizace
-        self.paned_vizu = tk.PanedWindow(hlavni_paned, orient=tk.VERTICAL, sashrelief=tk.RAISED)
-        hlavni_paned.add(self.paned_vizu)
+        # ✅ Bottom section: visualization
+        self.paned_viz = tk.PanedWindow(main_paned, orient=tk.VERTICAL, sashrelief=tk.RAISED)
+        main_paned.add(self.paned_viz)
 
-        viz_controls = ttk.LabelFrame(self.paned_vizu, text="📦 Vizu")
-        self.paned_vizu.add(viz_controls)
+        viz_controls = ttk.LabelFrame(self.paned_viz, text="📦 Visualization")
+        self.paned_viz.add(viz_controls)
 
-        self.agregovat_stav = tk.BooleanVar(value=True)
-        ttk.Checkbutton(viz_controls, text="Agregate", variable=self.agregovat_stav,
-                        command=lambda: self.vykresli_json(self.last_json)).pack(side=tk.LEFT, padx=5)
+        self.aggregate_status = tk.BooleanVar(value=True)
+        ttk.Checkbutton(viz_controls, text="Agregate", variable=self.aggregate_status,
+                        command=lambda: self.draw_json(self.last_json)).pack(side=tk.LEFT, padx=5)
 
         ttk.Label(viz_controls, text="Scale:").pack(side=tk.LEFT)
         self.scale_value = tk.DoubleVar(value=0.2)
         tk.Scale(viz_controls, from_=0.05, to=0.5, resolution=0.01, orient=tk.HORIZONTAL,
-                variable=self.scale_value, command=lambda _: self.vykresli_json(self.last_json),
+                variable=self.scale_value, command=lambda _: self.draw_json(self.last_json),
                 length=200).pack(side=tk.LEFT)
 
-        self.souhrn_label = ttk.Label(viz_controls, text="", foreground="blue")
-        self.souhrn_label.pack(pady=5)
+        self.summary_label = ttk.Label(viz_controls, text="", foreground="blue")
+        self.summary_label.pack(pady=5)
 
-        self.canvas_json = tk.Canvas(self.paned_vizu, width=1200, height=600, bg="white")
-        self.paned_vizu.add(self.canvas_json)
+        self.canvas_json = tk.Canvas(self.paned_viz, width=1200, height=600, bg="white")
+        self.paned_viz.add(self.canvas_json)
 
-        # ✅ Spodní horizontální paned pro graf a statistiky
-        self.paned_graf = tk.PanedWindow(self.paned_vizu, orient=tk.HORIZONTAL, sashrelief=tk.RAISED)
-        self.paned_vizu.add(self.paned_graf)
+        # ✅ Bottom horizontal paned for chart and statistics
+        self.paned_chart = tk.PanedWindow(self.paned_viz, orient=tk.HORIZONTAL, sashrelief=tk.RAISED)
+        self.paned_viz.add(self.paned_chart)
 
-        # Inicializace datových struktur
+        # Initialize data structures
         self.tooltip = None
-        self.soubor_ec = ""
-        self.data_radky = {}
-        self.index_mereni = 0
-        self.vysledky = []
-        self.vysledky_map = {}
-        self.status_agregace = {}
+        self.ec_file = ""
+        self.data_rows = {}
+        self.measurement_index = 0
+        self.results = []
+        self.results_map = {}
+        self.aggregation_status = {}
         self.last_json = {}
         # store EC header row (if present) so we can preserve it when writing
         self.ec_header = None
 
-        self.vytvor_trend_zalozku()
-        self.okno_nahledu = None
-        self.canvas_nahledu = None
+        self.create_trends_tab()
+        self.preview_window = None
+        self.preview_canvas = None
 
-        # Klávesové zkratky
-        self.root.bind("<Home>", lambda e: self.skok_na_zacatek())
-        self.root.bind("<End>", lambda e: self.skok_na_konec())
-        self.root.bind("<Left>", lambda e: self.predchozi_mereni())
-        self.root.bind("<Right>", lambda e: self.dalsi_mereni())
-        self.root.bind("<Control-e>", lambda e: self.exportuj_fail_obrazky())
-        self.root.bind("<Control-R>", lambda e: self.spustit_analyzu())
-        self.root.bind("<Control-E>", lambda e: self.exportuj_vsechny_fail_obrazky())
+        # Keyboard shortcuts
+        self.root.bind("<Home>", lambda e: self.jump_to_start())
+        self.root.bind("<End>", lambda e: self.jump_to_end())
+        self.root.bind("<Left>", lambda e: self.prev_measurement())
+        self.root.bind("<Right>", lambda e: self.next_measurement())
+        self.root.bind("<Control-e>", lambda e: self.export_fail_images())
+        self.root.bind("<Control-R>", lambda e: self.run_analysis())
+        self.root.bind("<Control-E>", lambda e: self.export_all_fail_images())
 
 
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
     import matplotlib.pyplot as plt
 
-    def zvol_adresar_obrazku(self):
+    def choose_image_directory(self):
         path = filedialog.askdirectory(title="Choose scans directory")
         if path:
-            self.adresar_obrazku = path
-            messagebox.showinfo("Directory choosen", f"directory: {path}")
+            self.image_dir = path
+            messagebox.showinfo("Directory chosen", f"directory: {path}")
 
 
-    def vloz_vystup(self, text):
+    def insert_output(self, text):
         self.run_box.config(state="normal")
         start = self.run_box.index("end-1c")
         self.run_box.insert(tk.END, text + "\n")
@@ -256,147 +256,147 @@ class PorovnaniApp:
         self.run_box.see("end")
        
 
-    def spustit_analyzu(self):
+    def run_analysis(self):
         text = "📊 summary\n\n"
 
-        if not self.soubor_ec or not self.data_radky:
+        if not self.ec_file or not self.data_rows:
             messagebox.showwarning("missing data", "Load attr.config file and measurement files first.")
             return
 
         try:
-                with open(self.soubor_ec, encoding='utf-8') as f:
+                with open(self.ec_file, encoding='utf-8') as f:
                     csvreader = csv.reader(f, delimiter=';')
                     # read and store header (if present)
                     header = next(csvreader, None)
                     self.ec_header = header
-                    ec_radky = list(csvreader)
+                    ec_rows = list(csvreader)
         except Exception as e:
             messagebox.showerror("Error", f"cannot load attr.config file {e}")
             return
 
-        # Zjisti maximální počet měření napříč soubory
-        delky = [len(radky) for radky in self.data_radky.values()]
-        pocet_mereni = min(delky) if delky else 0
+        # Determine the maximum number of measurements across files
+        lengths = [len(rows) for rows in self.data_rows.values()]
+        measurement_count = min(lengths) if lengths else 0
 
         fail_counter = {}
-        soubor_chyby = {}
-        pocet_ok_mereni = 0
-        pocet_fail_mereni = 0
+        file_errors = {}
+        ok_count = 0
+        fail_count = 0
 
-        for idx in range(pocet_mereni):
-            stav_mereni = "OK"
-            for radek in ec_radky:
+        for idx in range(measurement_count):
+            measurement_status = "OK"
+            for row in ec_rows:
                 try:
-                    layer, object_id, typ = radek[0], radek[1], radek[2]
-                    min_val = self.parse_decimal(radek[3])
-                    max_val = self.parse_decimal(radek[4])
-                    soubor_id = radek[5]
-                    index = int(radek[6]) - 1
-                    radky = self.data_radky.get(soubor_id, [])
-                    if idx >= len(radky):
+                    layer, object_id, error_type = row[0], row[1], row[2]
+                    min_val = self.parse_decimal(row[3])
+                    max_val = self.parse_decimal(row[4])
+                    file_id = row[5]
+                    index = int(row[6]) - 1
+                    rows = self.data_rows.get(file_id, [])
+                    if idx >= len(rows):
                         continue
-                    hodnota = self.parse_decimal(radky[idx][index])
-                    if min_val <= hodnota <= max_val:
+                    value = self.parse_decimal(rows[idx][index])
+                    if min_val <= value <= max_val:
                         continue
-                    stav_mereni = "FAIL"
-                    label = f"{layer} {object_id} {typ}"
+                    measurement_status = "FAIL"
+                    label = f"{layer} {object_id} {error_type}"
                     fail_counter[label] = fail_counter.get(label, 0) + 1
-                    soubor_chyby[soubor_id] = soubor_chyby.get(soubor_id, 0) + 1
+                    file_errors[file_id] = file_errors.get(file_id, 0) + 1
                 except Exception:
-                    stav_mereni = "FAIL"
+                    measurement_status = "FAIL"
                     continue
-            if stav_mereni == "OK":
-                pocet_ok_mereni += 1
+            if measurement_status == "OK":
+                ok_count += 1
             else:
-                pocet_fail_mereni += 1
+                fail_count += 1
 
 
-        # Výstup do souhrn_box
-        text = f"🔍 Done {pocet_mereni} all measurements\n\n"
+        # Output to summary box
+        text = f"🔍 Done {measurement_count} all measurements\n\n"
 
         if fail_counter:
             top_20 = sorted(fail_counter.items(), key=lambda x: x[1], reverse=True)[:20]
             text += "TOP 20 FAIL elements:\n"
             for label, count in top_20:
                 text += f"• {label}: {count}× FAIL\n"
-            nejcastejsi_obj = top_20[0]
-            text += f"\n🔁 Most frequent FAIL element: {nejcastejsi_obj[0]} ({nejcastejsi_obj[1]}×)\n"
+            most_common_obj = top_20[0]
+            text += f"\n🔁 Most frequent FAIL element: {most_common_obj[0]} ({most_common_obj[1]}×)\n"
         else:
             text += "No FAIL founded.\n"
 
-        if soubor_chyby:
+        if file_errors:
             text += "\n📁 Fail count by cameras\n"
-            for sid, count in sorted(soubor_chyby.items()):
+            for sid, count in sorted(file_errors.items()):
                 text += f"• file {sid}: {count}× FAIL\n"
-            nejhorsi_soubor = max(soubor_chyby.items(), key=lambda x: x[1])
-            text += f"\n📊 Most FAIL camera {nejhorsi_soubor[0]} ({nejhorsi_soubor[1]}×)\n"
+            worst_file = max(file_errors.items(), key=lambda x: x[1])
+            text += f"\n📊 Most FAIL camera {worst_file[0]} ({worst_file[1]}×)\n"
         else:
             text += "\nNone of cameras contains FAIL measurements.\n"
 
         text += f"\n📈 Measurement summary:\n"
-        text += f"✅ OK measurement: {pocet_ok_mereni}\n"
-        text += f"❌ FAIL measurement: {pocet_fail_mereni}\n"
+        text += f"✅ OK measurement: {ok_count}\n"
+        text += f"❌ FAIL measurement: {fail_count}\n"
 
         #self.aktualizuj_souhrn(text)
 
         self.run_box.config(state="normal")
         #self.run_box.insert(tk.END, text + "\n")
-        self.vloz_vystup(text)
+        self.insert_output(text)
 
         self.run_box.config(state="disabled")
 
-        # 📤 Výstup do záložky „Souhrnná analýza“
+               # 📤 Output to the "Summary Analysis" tab
         self.run_box.config(state="normal")
         self.run_box.delete("1.0", "end")
         self.run_box.insert("1.0", text)
         self.run_box.config(state="disabled")
 
 
-    def zpracuj_klik(self, event=None, soubor_id=None, prvni_hodnota=None):
+    def handle_click(self, event=None, file_id=None, first_value=None):
         import os
         from PIL import Image, ImageTk
 
-        if not self.adresar_obrazku:
+        if not self.image_dir:
             messagebox.showwarning("Directory not found", "choose directory with scans please.")
             return
 
-        hledany_kod = f"C{soubor_id}"
-        hledana_hodnota = str(prvni_hodnota).zfill(5)
+        search_code = f"C{file_id}"
+        search_value = str(first_value).zfill(5)
 
-        for filename in os.listdir(self.adresar_obrazku):
-            if filename.lower().endswith(".png") and hledany_kod in filename and hledana_hodnota in filename:
-                cesta = os.path.join(self.adresar_obrazku, filename)
-                self.zobraz_obrazek_v_okne(cesta)
+        for filename in os.listdir(self.image_dir):
+            if filename.lower().endswith(".png") and search_code in filename and search_value in filename:
+                path = os.path.join(self.image_dir, filename)
+                self.show_image_in_window(path)
                 return
 
-        messagebox.showwarning("Image not found", f"No existing file '{hledany_kod}' a '{hledana_hodnota}' in name.")
+        messagebox.showwarning("Image not found", f"No existing file '{search_code}' and '{search_value}' in name.")
 
 
-    def zobraz_obrazek_v_okne(self, cesta):
+    def show_image_in_window(self, file_path):
         import os
         from PIL import Image, ImageTk, ImageOps, ImageEnhance
 
-        # 🧠 Pokud okno už existuje, použij ho
-        if self.okno_nahledu and self.okno_nahledu.winfo_exists():
-            okno = self.okno_nahledu
-            for widget in okno.winfo_children():
+        # 🧠 If the window already exists, reuse it
+        if self.preview_window and self.preview_window.winfo_exists():
+            window = self.preview_window
+            for widget in window.winfo_children():
                 widget.destroy()
         else:
-            okno = tk.Toplevel(self.root)
-            self.okno_nahledu = okno
+            window = tk.Toplevel(self.root)
+            self.preview_window = window
 
-        canvas = tk.Canvas(okno, bg="black")
-        self.canvas_nahledu = canvas
+        canvas = tk.Canvas(window, bg="black")
+        self.preview_canvas = canvas
 
 
-        okno.title("Scan preview")
+        window.title("Scan preview")
 
-        # 🏷️ Název souboru
-        nazev = os.path.basename(cesta)
-        ttk.Label(okno, text=nazev, font=("Segoe UI", 10, "bold")).pack(pady=(5, 0))
+        # 🏷️ File name
+        file_name = os.path.basename(file_path)
+        ttk.Label(window, text=file_name, font=("Segoe UI", 10, "bold")).pack(pady=(5, 0))
 
-        # 🎛️ Výběr filtru
-        filtry = {
+        # 🎛️ Filter selection
+        filters = {
             "Default": lambda img: img,
             "Inverted": lambda img: ImageOps.invert(img.convert("RGB")),
             "Relax": lambda img: ImageOps.colorize(img.convert("L"), black="navy", white="gold"),
@@ -405,36 +405,36 @@ class PorovnaniApp:
             "Pastell": lambda img: ImageOps.colorize(img.convert("L"), black="#ffffffff", white="#5945aab0"),
         }
 
-        vybrany_filtr = tk.StringVar(value="Pastell")
+        selected_filter = tk.StringVar(value="Pastell")
 
-        ttk.Label(okno, text="Filtr:").pack()
-        combo_filtr = ttk.Combobox(okno, textvariable=vybrany_filtr, values=list(filtry.keys()), state="readonly")
+        ttk.Label(window, text="Filter:").pack()
+        combo_filtr = ttk.Combobox(window, textvariable=selected_filter, values=list(filters.keys()), state="readonly")
         combo_filtr.pack(pady=(0, 5))
 
         canvas.pack(fill="both", expand=True)
 
-        # 🖼️ Načti a ořízni horní třetinu
-        img = Image.open(cesta)
+        # 🖼️ Load and crop the top third
+        img = Image.open(file_path)
         w, h = img.size
-        horni_tretina = img.crop((0, 0, w, h // 3))
+        top_third = img.crop((0, 0, w, h // 3))
 
-        # 🧠 Nastav maximální velikost
+        # 🧠 Set maximum size
         max_width = 1600
         max_height = 1000
         scale_w = max_width / w
         scale_h = max_height / (h // 3)
         scale = min(scale_w, scale_h, 1.0)
 
-        canvas.original_image = horni_tretina
+        canvas.original_image = top_third
         canvas.zoom = scale
 
-        okno.geometry(f"{int(w * scale)}x{int(h // 3 * scale) + 100}")
+        window.geometry(f"{int(w * scale)}x{int(h // 3 * scale) + 100}")
 
-        def aktualizuj_obrazek(*args):
-            filtr_funkce = filtry.get(vybrany_filtr.get(), lambda img: img)
-            upraveny = filtr_funkce(canvas.original_image)
+        def update_image(*args):
+            filter_func = filters.get(selected_filter.get(), lambda img: img)
+            modified = filter_func(canvas.original_image)
 
-            zoomed = upraveny.resize(
+            zoomed = modified.resize(
                 (int(w * canvas.zoom), int(h // 3 * canvas.zoom)),
                 Image.LANCZOS
             )
@@ -442,63 +442,63 @@ class PorovnaniApp:
             canvas.delete("all")
             canvas.create_image(canvas.winfo_width() // 2, canvas.winfo_height() // 2, image=canvas.tk_img, anchor="center")
 
-        def zoomuj(event):
+        def zoom(event):
             canvas.zoom *= 1.1 if event.delta > 0 else 0.9
             canvas.zoom = max(0.2, min(canvas.zoom, 5.0))
-            aktualizuj_obrazek()
+            update_image()
 
         def start_drag(event):
             canvas.scan_mark(event.x, event.y)
 
-        def draguj(event):
+        def drag(event):
             canvas.scan_dragto(event.x, event.y, gain=1)
 
-        combo_filtr.bind("<<ComboboxSelected>>", aktualizuj_obrazek)
-        canvas.bind("<MouseWheel>", zoomuj)
+        combo_filtr.bind("<<ComboboxSelected>>", update_image)
+        canvas.bind("<MouseWheel>", zoom)
         canvas.bind("<ButtonPress-1>", start_drag)
-        canvas.bind("<B1-Motion>", draguj)
+        canvas.bind("<B1-Motion>", drag)
 
-        okno.update_idletasks()
-        aktualizuj_obrazek()
+        window.update_idletasks()
+        update_image()
 
 
-    def vytvor_trend_zalozku(self):
+    def create_trends_tab(self):
         self.trend_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.trend_frame, text="📈 Trends")
 
-        # Horní ovládací část
+        # Top control section
         ovladani = ttk.LabelFrame(self.trend_frame, text="Objects")
         ovladani.pack(fill="x", padx=10, pady=5)
 
-        self.objekty_listbox = tk.Listbox(ovladani, selectmode=tk.MULTIPLE, height=12, exportselection=False)
-        self.objekty_listbox.pack(side=tk.LEFT, padx=10, pady=5, fill="x", expand=True)
+        self.objects_listbox = tk.Listbox(ovladani, selectmode=tk.MULTIPLE, height=12, exportselection=False)
+        self.objects_listbox.pack(side=tk.LEFT, padx=10, pady=5, fill="x", expand=True)
 
-        ttk.Button(ovladani, text="Show graph", command=self.vykresli_trendy).pack(side=tk.LEFT, padx=10)
+        ttk.Button(ovladani, text="Show graph", command=self.draw_trends).pack(side=tk.LEFT, padx=10)
 
-        self.zobrazit_trim_avg = tk.BooleanVar(value=False)
-        tk.Checkbutton(self.trend_frame, text="Trim average", variable=self.zobrazit_trim_avg).pack(anchor="w", pady=5)
+        self.show_trim_avg = tk.BooleanVar(value=False)
+        tk.Checkbutton(self.trend_frame, text="Trim average", variable=self.show_trim_avg).pack(anchor="w", pady=5)
 
         self.trim_ratio = tk.DoubleVar(value=0.1)
         ttk.Label(self.trend_frame, text="Trim (%)").pack(anchor="w", padx=10)
         tk.Spinbox(self.trend_frame, from_=0.0, to=0.4, increment=0.05, textvariable=self.trim_ratio, format="%.2f", width=5).pack(anchor="w", padx=10)
 
-        self.typ_prumeru = tk.StringVar(value="trim")
+        self.average_type = tk.StringVar(value="trim")
         ttk.Label(self.trend_frame, text="Average type:").pack(anchor="w", padx=10)
-        ttk.OptionMenu(self.trend_frame, self.typ_prumeru, "trim", "mean", "robust", "median").pack(anchor="w", padx=10)
+        ttk.OptionMenu(self.trend_frame, self.average_type, "trim", "mean", "robust", "median").pack(anchor="w", padx=10)
 
-        # Filtr stavů
-        self.filtr_frame = ttk.LabelFrame(self.trend_frame, text="Filter states")
-        self.filtr_frame.pack(fill="x", padx=10, pady=5)
+        # Filter states
+        self.filter_frame = ttk.LabelFrame(self.trend_frame, text="Filter states")
+        self.filter_frame.pack(fill="x", padx=10, pady=5)
 
-        self.filtr_ok = tk.BooleanVar(value=True)
-        self.filtr_fail = tk.BooleanVar(value=True)
-        self.filtr_error = tk.BooleanVar(value=False)
+        self.filter_ok = tk.BooleanVar(value=True)
+        self.filter_fail = tk.BooleanVar(value=True)
+        self.filter_error = tk.BooleanVar(value=False)
 
-        ttk.Checkbutton(self.filtr_frame, text="OK", variable=self.filtr_ok).pack(side=tk.LEFT, padx=5)
-        ttk.Checkbutton(self.filtr_frame, text="FAIL", variable=self.filtr_fail).pack(side=tk.LEFT, padx=5)
-        ttk.Checkbutton(self.filtr_frame, text="ERROR", variable=self.filtr_error).pack(side=tk.LEFT, padx=5)
+        ttk.Checkbutton(self.filter_frame, text="OK", variable=self.filter_ok).pack(side=tk.LEFT, padx=5)
+        ttk.Checkbutton(self.filter_frame, text="FAIL", variable=self.filter_fail).pack(side=tk.LEFT, padx=5)
+        ttk.Checkbutton(self.filter_frame, text="ERROR", variable=self.filter_error).pack(side=tk.LEFT, padx=5)
 
-        # ✅ Spodní horizontální PanedWindow pro graf a statistiky
+        # ✅ Bottom horizontal paned for chart and statistics
         self.trend_paned = tk.PanedWindow(self.trend_frame, orient=tk.HORIZONTAL, sashrelief=tk.RAISED)
         self.trend_paned.pack(fill="both", expand=True, padx=10, pady=10)
 
@@ -507,39 +507,39 @@ class PorovnaniApp:
         self.trend_paned.add(self.trend_canvas_frame, minsize=400)
 
         # Panel pro statistiky
-        self.statistiky_frame = ttk.LabelFrame(self.trend_paned, text="📊 Statistiky")
-        self.trend_paned.add(self.statistiky_frame)
+        self.statistics_frame = ttk.LabelFrame(self.trend_paned, text="📊 Statistics")
+        self.trend_paned.add(self.statistics_frame)
 
-        self.statistika_text = tk.Text(self.statistiky_frame, wrap="word", height=20, width=40, font=("Segoe UI", 10))
-        self.statistika_text.pack(fill="both", expand=True)
-        self.statistika_text.config(state="disabled")
-        self.statistika_text.tag_configure("bold", font=("Segoe UI", 10, "bold"))
+        self.statistics_text = tk.Text(self.statistics_frame, wrap="word", height=20, width=40, font=("Segoe UI", 10))
+        self.statistics_text.pack(fill="both", expand=True)
+        self.statistics_text.config(state="disabled")
+        self.statistics_text.tag_configure("bold", font=("Segoe UI", 10, "bold"))
 
 
-    def robustni_prumer(self, hodnoty, percentil=0.05):
-        if not hodnoty:
+    def robust_average(self, values, percentile=0.05):
+        if not values:
             return None
-        hodnoty_sorted = sorted(hodnoty)
-        n = len(hodnoty_sorted)
-        dolni = int(n * percentil)
-        horni = int(n * (1 - percentil))
-        if horni <= dolni:
+        values_sorted = sorted(values)
+        n = len(values_sorted)
+        lower = int(n * percentile)
+        upper = int(n * (1 - percentile))
+        if upper <= lower:
             return None
-        vycistene = hodnoty_sorted[dolni:horni]
-        return sum(vycistene) / len(vycistene)
+        trimmed = values_sorted[lower:upper]
+        return sum(trimmed) / len(trimmed)
 
 
-    def aktualizuj_objekty_dropdown(self):
+    def update_objects_dropdown(self):
         try:
-            with open(self.soubor_ec, encoding='utf-8') as f:
+            with open(self.ec_file, encoding='utf-8') as f:
                 reader = csv.reader(f, delimiter=';')
                 # read & store header
                 header = next(reader, None)
                 self.ec_header = header
-                objekty = sorted(set(f"{r[0]}|{r[1]}|{r[2]}" for r in reader))
-            self.objekty_listbox.delete(0, tk.END)
-            for obj in objekty:
-                self.objekty_listbox.insert(tk.END, obj)
+                objects = sorted(set(f"{r[0]}|{r[1]}|{r[2]}" for r in reader))
+            self.objects_listbox.delete(0, tk.END)
+            for obj in objects:
+                self.objects_listbox.insert(tk.END, obj)
         except Exception as e:
             messagebox.showerror("Error", f"Cannot load attribute config file: {e}")
 
@@ -559,18 +559,18 @@ class PorovnaniApp:
             raise ValueError(f"Cannot be switch '{s_str}' to number: {e}")
 
 
-    def vykresli_trendy(self):
-        vybrane_indexy = self.objekty_listbox.curselection()
-        if not vybrane_indexy:
+    def draw_trends(self):
+        selected_indices = self.objects_listbox.curselection()
+        if not selected_indices:
             messagebox.showwarning("Selection", "Choose at least one object.")
             return
 
-        vybrane_objekty = [self.objekty_listbox.get(i) for i in vybrane_indexy]
+        selected_objects = [self.objects_listbox.get(i) for i in selected_indices]
         fig, ax = plt.subplots(figsize=(10, 5))
-        statistiky = []
+        statistics_data = []
 
         try:
-            with open(self.soubor_ec, encoding='utf-8') as f:
+            with open(self.ec_file, encoding='utf-8') as f:
                 csvreader = csv.reader(f, delimiter=';')
                 # read & store header
                 header = next(csvreader, None)
@@ -580,76 +580,76 @@ class PorovnaniApp:
             messagebox.showerror("Error", f"Cannot load attribute config file: {e}")
             return
 
-        max_mereni = max(len(r) for r in self.data_radky.values())
-        zobrazene_stavy = []
-        if self.filtr_ok.get(): zobrazene_stavy.append("OK")
-        if self.filtr_fail.get(): zobrazene_stavy.append("FAIL")
-        if self.filtr_error.get(): zobrazene_stavy.append("ERROR")
+        max_measurements = max(len(r) for r in self.data_rows.values())
+        visible_states = []
+        if self.filter_ok.get(): visible_states.append("OK")
+        if self.filter_fail.get(): visible_states.append("FAIL")
+        if self.filter_error.get(): visible_states.append("ERROR")
 
-        for objekt_text in vybrane_objekty:
+        for object_text in selected_objects:
             try:
-                layerName, objectId, errorType = objekt_text.split("|")
+                layerName, objectId, errorType = object_text.split("|")
             except ValueError:
                 continue
 
-            radky_ec = [r for r in reader if r[0] == layerName and r[1] == objectId and r[2] == errorType]
-            hodnoty = []
-            stavy = []
-            for i in range(max_mereni):
-                stav = "ERROR"
-                hodnota = None
-                for r in radky_ec:
+            ec_rows_for_obj = [r for r in reader if r[0] == layerName and r[1] == objectId and r[2] == errorType]
+            values = []
+            statuses = []
+            for i in range(max_measurements):
+                status = "ERROR"
+                value = None
+                for r in ec_rows_for_obj:
                     try:
-                        soubor_id = r[5]
+                        file_id = r[5]
                         index = int(r[6]) - 1
-                        radky = self.data_radky.get(soubor_id, [])
-                        if i >= len(radky):
+                        rows = self.data_rows.get(file_id, [])
+                        if i >= len(rows):
                             continue
                         try:
-                            hodnota = self.parse_decimal(radky[i][index])
+                            value = self.parse_decimal(rows[i][index])
                         except Exception:
                             continue
                         min_val = self.parse_decimal(r[3])
                         max_val = self.parse_decimal(r[4])
-                        stav = "OK" if min_val <= hodnota <= max_val else "FAIL"
+                        status = "OK" if min_val <= value <= max_val else "FAIL"
                         break
                     except Exception:
                         continue
-                hodnoty.append(hodnota)
-                stavy.append(stav)
+                values.append(value)
+                statuses.append(status)
 
-            x_filtered = [i for i, s in zip(range(1, len(hodnoty)+1), stavy) if s in zobrazene_stavy and hodnoty[i-1] is not None]
-            y_filtered = [h for h, s in zip(hodnoty, stavy) if s in zobrazene_stavy and h is not None]
+            x_filtered = [i for i, s in zip(range(1, len(values)+1), statuses) if s in visible_states and values[i-1] is not None]
+            y_filtered = [h for h, s in zip(values, statuses) if s in visible_states and h is not None]
 
             if not y_filtered:
                 continue
 
             ax.plot(x_filtered, y_filtered, label=f"{layerName} {objectId} ({errorType})", linewidth=2)
 
-            # Výpočet průměru
-            typ = self.typ_prumeru.get()
+            # Average calculation
+            avg_type = self.average_type.get()
             avg = None
-            if typ == "mean":
+            if avg_type == "mean":
                 avg = sum(y_filtered)/len(y_filtered)
-            elif typ == "trim":
-                avg = self.trimovany_prumer(y_filtered, self.trim_ratio.get())
-            elif typ == "robust":
-                avg = self.robustni_prumer(y_filtered, percentil=0.05)
-            elif typ == "median":
+            elif avg_type == "trim":
+                avg = self.trimmed_average(y_filtered, self.trim_ratio.get())
+            elif avg_type == "robust":
+                avg = self.robust_average(y_filtered, percentile=0.05)
+            elif avg_type == "median":
                 avg = statistics.median(y_filtered)
 
             avg_text = f"{avg:.2f}" if avg is not None else "n/a"
-            statistiky.append(
-                f"🔹 {layerName} {objectId} ({errorType}) → min: {min(y_filtered):.2f}, max: {max(y_filtered):.2f}, avg ({typ}): {avg_text}, count: {len(y_filtered)}"
+            statistics_data.append(
+                f"🔹 {layerName} {objectId} ({errorType}) → min: {min(y_filtered):.2f}, max: {max(y_filtered):.2f}, avg ({avg_type}): {avg_text}, count: {len(y_filtered)}"
             )
 
-            # Klouzavý průměr jako křivka
+            # Moving average as a curve
             window = 5
             if avg is not None and len(y_filtered) >= window:
                 y_moving_avg = np.convolve(y_filtered, np.ones(window)/window, mode='valid')
                 x_moving_avg = x_filtered[window - 1:]
                 ax.plot(x_moving_avg, y_moving_avg, linestyle="--", color="orange",
-                        label=f"{typ.capitalize()} trend ({layerName} {objectId})")
+                        label=f"{avg_type.capitalize()} trend ({layerName} {objectId})")
 
         ax.set_title("Trends of selected objects")
         ax.set_xlabel("Measurement index")
@@ -664,48 +664,48 @@ class PorovnaniApp:
         canvas.draw()
         canvas.get_tk_widget().pack(fill="both", expand=True)
 
-        # ✅ Toolbar pro zoom/pan/save
+        # ✅ Toolbar for zoom/pan/save
         toolbar = NavigationToolbar2Tk(canvas, self.trend_canvas_frame)
         toolbar.update()
         toolbar.pack(side="bottom", fill="x")
 
-        # Výpis statistik s tučným avg
-        self.statistika_text.config(state="normal")
-        self.statistika_text.delete("1.0", tk.END)
+        # Display statistics with bold avg
+        self.statistics_text.config(state="normal")
+        self.statistics_text.delete("1.0", tk.END)
 
-        for radek in statistiky:
-            if "avg" in radek:
-                zacatek = self.statistika_text.index("end-1c")
-                self.statistika_text.insert("end", radek + "\n")
-                konec = self.statistika_text.index("end-1c")
-                match = re.search(r"avg \(\w+\): (\d+\.\d+|n/a)", radek)
+        for row in statistics_data:
+            if "avg" in row:
+                start_pos = self.statistics_text.index("end-1c")
+                self.statistics_text.insert("end", row + "\n")
+                end_pos = self.statistics_text.index("end-1c")
+                match = re.search(r"avg \(\w+\): (\d+\.\d+|n/a)", row)
                 if match:
-                    cislo = match.group(1)
-                    offset = radek.index(cislo)
-                    start_offset = f"{zacatek}+{offset}c"
-                    end_offset = f"{start_offset}+{len(cislo)}c"
-                    self.statistika_text.tag_add("bold", start_offset, end_offset)
+                    number = match.group(1)
+                    offset = row.index(number)
+                    start_offset = f"{start_pos}+{offset}c"
+                    end_offset = f"{start_offset}+{len(number)}c"
+                    self.statistics_text.tag_add("bold", start_offset, end_offset)
             else:
-                self.statistika_text.insert("end", radek + "\n")
+                self.statistics_text.insert("end", row + "\n")
 
-        self.statistika_text.config(state="disabled")
+        self.statistics_text.config(state="disabled")
 
 
-    def nacist_soubory(self):
-        self.soubor_ec = filedialog.askopenfilename(
+    def load_files(self):
+        self.ec_file = filedialog.askopenfilename(
             title="Choose Atr.config file.csv",
             filetypes=[("Atr files", "*.csv")]
         )
 
-        soubory = filedialog.askopenfilenames(
+        files = filedialog.askopenfilenames(
             title="Choose measurement files",
             filetypes=[("Data files", "*.csv *.log"), ("All files", "*.*")]
         )
 
-        self.data_radky.clear()
+        self.data_rows.clear()
 
-        for path in soubory:
-            jmeno = os.path.splitext(os.path.basename(path))[0]
+        for path in files:
+            name = os.path.splitext(os.path.basename(path))[0]
             try:
                 with open(path, encoding='utf-8') as f:
                     content = f.read()
@@ -730,7 +730,7 @@ class PorovnaniApp:
                             parts = [content]
 
                 # Clean control characters for every logical line
-                cleaned_lines = [odstranit_ridici_znaky(p) for p in parts]
+                cleaned_lines = [remove_control_chars(p) for p in parts]
 
                 reader = csv.reader(cleaned_lines, delimiter=';')
                 rows = list(reader)
@@ -740,316 +740,316 @@ class PorovnaniApp:
                 if len(rows) <= 1 and len(content) > 200:
                     import collections
                     ctrl_counts = collections.Counter(ch for ch in content if ord(ch) < 32)
-                    print(f"Debug: control char counts for {jmeno}: {dict(ctrl_counts)}")
+                    print(f"Debug: control char counts for {name}: {dict(ctrl_counts)}")
                     try:
                         alt_parts = [p.strip().replace('\x03', '') for p in __import__('re').split(r'[\x01-\x1F]+', content) if p.strip()]
                         if len(alt_parts) > 1:
-                            cleaned_lines_alt = [odstranit_ridici_znaky(p) for p in alt_parts]
+                            cleaned_lines_alt = [remove_control_chars(p) for p in alt_parts]
                             reader_alt = csv.reader(cleaned_lines_alt, delimiter=';')
                             rows_alt = list(reader_alt)
                             if len(rows_alt) > 1:
-                                print(f"Debug: aggressive split yielded {len(rows_alt)} rows for {jmeno}")
+                                print(f"Debug: aggressive split yielded {len(rows_alt)} rows for {name}")
                                 rows = rows_alt
                     except Exception as e:
-                        print(f"Debug: aggressive split failed for {jmeno}: {e}")
+                        print(f"Debug: aggressive split failed for {name}: {e}")
                 if rows:
-                    self.data_radky[jmeno] = rows
+                    self.data_rows[name] = rows
                     # Debug: report how many logical rows (measurements) were loaded for this file
                     try:
                         cnt = len(rows)
-                        print(f"Loaded {cnt} records from {jmeno}")
+                        print(f"Loaded {cnt} records from {name}")
                     except Exception:
                         pass
                 else:
-                    print(f"⚠️ File {jmeno} is empty or unreadeble.")
+                    print(f"⚠️ File {name} is empty or unreadable.")
 
             except Exception as e:
-                messagebox.showerror("Error", f"Cannot load file {jmeno}: {e}")
+                messagebox.showerror("Error", f"Cannot load file {name}: {e}")
 
-        self.index_mereni = 0
-        self.spustit_kontrolu()
+        self.measurement_index = 0
+        self.run_check()
 
 
-    def spustit_kontrolu(self):
+    def run_check(self):
         import re
 
-        self.vysledky.clear()
-        self.vysledky_map.clear()
-        self.status_agregace.clear()
-        self.ec_radky = []
+        self.results.clear()
+        self.results_map.clear()
+        self.aggregation_status.clear()
+        self.ec_rows = []
 
         try:
-            with open(self.soubor_ec, encoding='utf-8') as f:
+            with open(self.ec_file, encoding='utf-8') as f:
                 csvreader = csv.reader(f, delimiter=';')
                 # read and store header (if present) then iterate remaining rows
                 header = next(csvreader, None)
                 self.ec_header = header
-                for index_radku, radek in enumerate(csvreader):
-                    self.ec_radky.append(radek)
+                for row_index, row in enumerate(csvreader):
+                    self.ec_rows.append(row)
                     try:
-                        min_val = self.parse_decimal(radek[3])
-                        max_val = self.parse_decimal(radek[4])
-                        soubor_id = radek[5]
-                        index = int(radek[6]) - 1
-                        radky = self.data_radky.get(soubor_id, [])
-                        if self.index_mereni >= len(radky):
+                        min_val = self.parse_decimal(row[3])
+                        max_val = self.parse_decimal(row[4])
+                        file_id = row[5]
+                        index = int(row[6]) - 1
+                        rows = self.data_rows.get(file_id, [])
+                        if self.measurement_index >= len(rows):
                             raise IndexError("Measurement does not exist")
 
-                        radek_mereni = radky[self.index_mereni]
-                        hodnota = self.parse_decimal(radek_mereni[index])
-                        prvni_hodnota = str(radek_mereni[0]).replace(',', '.')
+                        measurement_row = rows[self.measurement_index]
+                        value = self.parse_decimal(measurement_row[index])
+                        first_value = str(measurement_row[0]).replace(',', '.')
 
-                        cislo_souboru = re.findall(r'\d+', soubor_id)
-                        cislo_souboru = cislo_souboru[0] if cislo_souboru else soubor_id
+                        file_number = re.findall(r'\d+', file_id)
+                        file_number = file_number[0] if file_number else file_id
 
-                        label = f"{radek[0]} {radek[1]} {radek[2]}"
-                        key = (radek[0], str(radek[1]))
+                        label = f"{row[0]} {row[1]} {row[2]}"
+                        key = (row[0], str(row[1]))
 
-                        if min_val <= hodnota <= max_val:
+                        if min_val <= value <= max_val:
                             status = "OK"
-                            ikona = "✅"
+                            icon = "✅"
                         else:
                             status = "FAIL"
-                            ikona = "❌"
+                            icon = "❌"
 
-                        text = f"[camera {cislo_souboru} | image number: {prvni_hodnota}] {ikona} {label}: {hodnota} ({min_val}–{max_val})"
-                        self.vysledky.append((status, text, index_radku))
+                        text = f"[camera {file_number} | image number: {first_value}] {icon} {label}: {value} ({min_val}–{max_val})"
+                        self.results.append((status, text, row_index))
 
-                        self.vysledky_map.setdefault(key, []).append({
+                        self.results_map.setdefault(key, []).append({
                             "status": status,
-                            "value": hodnota,
+                            "value": value,
                             "min": min_val,
                             "max": max_val,
                             "label": label,
-                            "objectId": str(radek[1]),
-                            "souborId": soubor_id,
-                            "prvniHodnota": prvni_hodnota
+                            "objectId": str(row[1]),
+                            "file_id": file_id,
+                            "first_value": first_value
                         })
 
-                        prev = self.status_agregace.get(key, "OK")
+                        prev = self.aggregation_status.get(key, "OK")
                         if prev == "OK" and status != "OK":
-                            self.status_agregace[key] = "NOK"
+                            self.aggregation_status[key] = "NOK"
                         elif prev not in ["NOK", "ERROR"]:
-                            self.status_agregace[key] = status
+                            self.aggregation_status[key] = status
 
                     except Exception as e:
                         import traceback
                         tb = traceback.format_exc()
-                        label = f"{radek[0]} {radek[1]} {radek[2]}"
-                        key = (radek[0], str(radek[1]))
+                        label = f"{row[0]} {row[1]} {row[2]}"
+                        key = (row[0], str(row[1]))
                         # Try to collect contextual info to help debugging
                         ctx = {}
                         try:
-                            ctx['soubor_id'] = soubor_id
-                            ctx['index_field'] = radek[6] if len(radek) > 6 else None
-                            ctx['data_rows_for_file'] = len(self.data_radky.get(soubor_id, []))
+                            ctx['file_id'] = file_id
+                            ctx['index_field'] = row[6] if len(row) > 6 else None
+                            ctx['data_rows_for_file'] = len(self.data_rows.get(file_id, []))
                         except Exception:
                             pass
                         detail_msg = f"⚠️ {label}: {type(e).__name__}: {e} | ctx={ctx}"
                         # Append the short message to GUI results
-                        self.vysledky.append(("ERROR", detail_msg, index_radku))
+                        self.results.append(("ERROR", detail_msg, row_index))
                         # Store more detailed trace in the map for developer inspection
-                        self.vysledky_map.setdefault(key, []).append({
+                        self.results_map.setdefault(key, []).append({
                             "status": "ERROR", "value": None, "min": None, "max": None, "label": label,
                             "traceback": tb
                         })
-                        self.status_agregace[key] = "ERROR"
+                        self.aggregation_status[key] = "ERROR"
                         # Also print full traceback to console/log for debugging
-                        print(f"Error while processing EC row {index_radku} ({label}): {e}\n{tb}")
+                        print(f"Error while processing EC row {row_index} ({label}): {e}\n{tb}")
 
         except Exception as e:
             messagebox.showerror("Error", f"Cannot load attr.config file: {e}")
             return
 
-        self.obnovit_vystup()
-        self.vykresli_json(self.last_json)
-        self.aktualizuj_objekty_dropdown()
+        self.refresh_output()
+        self.draw_json(self.last_json)
+        self.update_objects_dropdown()
 
-        # ✅ Aktualizace stavů v existujícím JSON
+        # ✅ Update statuses in existing JSON
         for layer in self.last_json.get("layers", []):
             layer_name = layer.get("layerName", "")
             for group in layer.get("layerObjects", []):
                 for obj in group:
                     key = (layer_name, str(obj.get("objectId")))
-                    stav = self.status_agregace.get(key, "OK")
-                    obj["stav"] = stav
+                    status = self.aggregation_status.get(key, "OK")
+                    obj["status"] = status
 
-                    entries = self.vysledky_map.get(key, [])
+                    entries = self.results_map.get(key, [])
                     for entry in entries:
                         if entry.get("value") is not None:
-                            obj["souborId"] = entry.get("souborId", "")
-                            obj["prvniHodnota"] = entry.get("prvniHodnota", "")
+                            obj["file_id"] = entry.get("file_id", "")
+                            obj["first_value"] = entry.get("first_value", "")
                             break
 
-        self.vykresli_json(self.last_json)
+        self.draw_json(self.last_json)
 
 
-    def vytvor_objekty_pro_json(self):
-        skupiny = {}
-        for (layerName, objectId), entries in self.vysledky_map.items():
-            stav = self.status_agregace.get((layerName, objectId), "OK")
+    def create_objects_for_json(self):
+        groups = {}
+        for (layerName, objectId), entries in self.results_map.items():
+            status = self.aggregation_status.get((layerName, objectId), "OK")
             for entry in entries:
                 if entry.get("value") is not None:
                     obj = {
                         "objectId": objectId,
                         "width": 20,
                         "height": 100,
-                        "stav": stav,
+                        "status": status,
                         "layerName": layerName,
-                        "souborId": entry.get("souborId", ""),
-                        "prvniHodnota": entry.get("prvniHodnota", "")
+                        "file_id": entry.get("file_id", ""),
+                        "first_value": entry.get("first_value", "")
                     }
-                    skupiny.setdefault(objectId, []).append(obj)
+                    groups.setdefault(objectId, []).append(obj)
                     break
-        return list(skupiny.values())  # ✅ seznam skupin
+        return list(groups.values())  # ✅ list of groups
 
 
-    def obnovit_vystup(self, *_):
-        self.vystup.delete(1.0, tk.END)
-        typ = self.filtr_typ.get()
+    def refresh_output(self, *_):
+        self.output.delete(1.0, tk.END)
+        filter_val = self.filter_type.get()
 
-        for i, vysledek in enumerate(self.vysledky):
-            status, text, index_radku = vysledek
-            if typ == "ALL" or typ == status:
-                tag = f"radek_{i}"
-                barva = {"OK": ("green", "#eaffea"), "FAIL": ("red", "#ffeaea"), "ERROR": ("orange", "#fff5cc")}.get(status, ("black", "white"))
-                self.vystup.insert(tk.END, text + "\n", tag)
-                self.vystup.tag_config(tag, foreground=barva[0], background=barva[1])
-                self.vystup.tag_bind(tag, "<Button-1>", lambda e, idx=index_radku: self.otevri_editor_min_max(idx))
+        for i, result_item in enumerate(self.results):
+            status, text, row_index = result_item
+            if filter_val == "ALL" or filter_val == status:
+                tag = f"row_{i}"
+                color_pair = {"OK": ("green", "#eaffea"), "FAIL": ("red", "#ffeaea"), "ERROR": ("orange", "#fff5cc")}.get(status, ("black", "white"))
+                self.output.insert(tk.END, text + "\n", tag)
+                self.output.tag_config(tag, foreground=color_pair[0], background=color_pair[1])
+                self.output.tag_bind(tag, "<Button-1>", lambda e, idx=row_index: self.open_min_max_editor(idx))
 
-        self.zobraz_souhrn()
+        self.show_summary()
 
 
-    def otevri_editor_min_max(self, index_radku):
-        radek = self.ec_radky[index_radku]
-        top = tk.Toplevel(self.root)
-        top.title("Settings min/max")
-        top.geometry("300x150")
-        top.resizable(False, False)
+    def open_min_max_editor(self, row_index):
+        row = self.ec_rows[row_index]
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Settings min/max")
+        dialog.geometry("300x150")
+        dialog.resizable(False, False)
 
-        tk.Label(top, text="Min:").pack(pady=5)
-        min_entry = tk.Entry(top)
-        min_entry.insert(0, radek[3])
+        tk.Label(dialog, text="Min:").pack(pady=5)
+        min_entry = tk.Entry(dialog)
+        min_entry.insert(0, row[3])
         min_entry.pack()
 
-        tk.Label(top, text="Max:").pack(pady=5)
-        max_entry = tk.Entry(top)
-        max_entry.insert(0, radek[4])
+        tk.Label(dialog, text="Max:").pack(pady=5)
+        max_entry = tk.Entry(dialog)
+        max_entry.insert(0, row[4])
         max_entry.pack()
 
-        def ulozit():
-            radek[3] = min_entry.get()
-            radek[4] = max_entry.get()
+        def save():
+            row[3] = min_entry.get()
+            row[4] = max_entry.get()
             try:
                 # create a backup before overwriting EC.csv
                 try:
-                    shutil.copy(self.soubor_ec, self.soubor_ec + '.bak')
+                    shutil.copy(self.ec_file, self.ec_file + '.bak')
                 except Exception:
                     # non-fatal: continue to attempt write
                     pass
-                with open(self.soubor_ec, 'w', encoding='utf-8', newline='') as f:
+                with open(self.ec_file, 'w', encoding='utf-8', newline='') as f:
                     writer = csv.writer(f, delimiter=';')
                     # preserve header if we stored it when reading
                     if getattr(self, 'ec_header', None):
                         writer.writerow(self.ec_header)
-                    writer.writerows(self.ec_radky)
-                top.destroy()
-                self.spustit_kontrolu()
+                    writer.writerows(self.ec_rows)
+                dialog.destroy()
+                self.run_check()
             except Exception as e:
                 messagebox.showerror("Error", f"cannot save Attr file: {e}")
 
-        tk.Button(top, text="Save changes", command=ulozit).pack(pady=10)
+        tk.Button(dialog, text="Save changes", command=save).pack(pady=10)
 
 
-    def zobraz_souhrn(self):
-        # Horní štítek
-        ok = sum(1 for v in self.vysledky if v[0] == "OK")
-        fail = sum(1 for v in self.vysledky if v[0] == "FAIL")
-        error = sum(1 for v in self.vysledky if v[0] == "ERROR")
-        total = len(self.vysledky)
+    def show_summary(self):
+        # Top label
+        ok = sum(1 for v in self.results if v[0] == "OK")
+        fail = sum(1 for v in self.results if v[0] == "FAIL")
+        error = sum(1 for v in self.results if v[0] == "ERROR")
+        total = len(self.results)
 
-        barva = "green" if ok / total >= 0.8 else "red" if fail / total >= 0.4 or error / total >= 0.3 else "orange"
+        color = "green" if ok / total >= 0.8 else "red" if fail / total >= 0.4 or error / total >= 0.3 else "orange"
         text = f"Total: {total} | ✅ OK: {ok} | ❌ FAIL: {fail} | ⚠️ ERROR: {error}"
 
-        self.souhrn_label.config(text=text, foreground=barva)
-        self.mereni_label.config(text=f"Measurement #{self.index_mereni + 1}")
+        self.summary_label.config(text=text, foreground=color)
+        self.measurement_label.config(text=f"Measurement #{self.measurement_index + 1}")
 
-        # 🎯 Banner stavu měření
-        if all(v[0] == "OK" for v in self.vysledky):
-            self.banner_stav.config(text="✅ OK", bg="#2ecc71", fg="white")
-        elif any(v[0] == "FAIL" for v in self.vysledky):
-            self.banner_stav.config(text="❌ FAIL", bg="#e74c3c", fg="white")
-        elif any(v[0] == "ERROR" for v in self.vysledky):
-            self.banner_stav.config(text="⚠️ ERROR", bg="#f39c12", fg="black")
+        # 🎯 Measurement status banner
+        if all(v[0] == "OK" for v in self.results):
+            self.status_banner.config(text="✅ OK", bg="#2ecc71", fg="white")
+        elif any(v[0] == "FAIL" for v in self.results):
+            self.status_banner.config(text="❌ FAIL", bg="#e74c3c", fg="white")
+        elif any(v[0] == "ERROR" for v in self.results):
+            self.status_banner.config(text="⚠️ ERROR", bg="#f39c12", fg="black")
         else:
-            self.banner_stav.config(text="—", bg="gray", fg="white")
+            self.status_banner.config(text="—", bg="gray", fg="white")
 
 
-    def ulozit_vysledky(self):
-            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV soubory", "*.csv")])
+    def save_results(self):
+            path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
             if not path:
                 return
             with open(path, "w", encoding="utf-8", newline='') as f:
                 writer = csv.writer(f, delimiter=';')
-                for row in self.vysledky:
+                for row in self.results:
                     writer.writerow(row[:2])
 
 
-    def uprav_soubor_ec(self):
-        procento = float(self.procento.get()) / 100.0
-        nove_radky = []
+    def edit_ec_file(self):
+        pct = float(self.percentage.get()) / 100.0
+        new_rows = []
         # Read EC and adjust min/max for selected params; backup before writing
         try:
-            with open(self.soubor_ec, encoding='utf-8', newline='') as f:
+            with open(self.ec_file, encoding='utf-8', newline='') as f:
                 csvreader = csv.reader(f, delimiter=';')
                 # preserve header
                 header = next(csvreader, None)
                 if header:
-                    nove_radky.append(header)
-                for radek in csvreader:
+                    new_rows.append(header)
+                for row in csvreader:
                     try:
-                        # kontrolujeme třetí sloupec (index 2)
-                        if radek[2].strip() in ["areaL", "areaR", "area"]:
-                            soubor_id = radek[5]
-                            index = int(radek[6]) - 1
-                            hodnota = self.parse_decimal(self.data_radky[soubor_id][self.index_mereni][index])
-                            radek[3] = str(round(hodnota * (1 - procento), 3)).replace('.', ',')
-                            radek[4] = str(round(hodnota * (1 + procento), 3)).replace('.', ',')
-                            print(f"Done: {radek[0]} {radek[1]} {radek[2]} → min={radek[3]}, max={radek[4]}")
+                        # check the third column (index 2)
+                        if row[2].strip() in ["areaL", "areaR", "area"]:
+                            file_id = row[5]
+                            index = int(row[6]) - 1
+                            value = self.parse_decimal(self.data_rows[file_id][self.measurement_index][index])
+                            row[3] = str(round(value * (1 - pct), 3)).replace('.', ',')
+                            row[4] = str(round(value * (1 + pct), 3)).replace('.', ',')
+                            print(f"Done: {row[0]} {row[1]} {row[2]} → min={row[3]}, max={row[4]}")
                     except Exception as e:
-                        print(f"Error while editing a row {radek}: {e}")
-                    nove_radky.append(radek)
+                        print(f"Error while editing a row {row}: {e}")
+                    new_rows.append(row)
         except Exception as e:
             messagebox.showerror("Error", f"cannot load attr. config file: {e}")
             return
 
         try:
             try:
-                shutil.copy(self.soubor_ec, self.soubor_ec + '.bak')
+                shutil.copy(self.ec_file, self.ec_file + '.bak')
             except Exception:
                 pass
-            with open(self.soubor_ec, 'w', encoding='utf-8', newline='') as f:
+            with open(self.ec_file, 'w', encoding='utf-8', newline='') as f:
                 writer = csv.writer(f, delimiter=';')
-                writer.writerows(nove_radky)
+                writer.writerows(new_rows)
         except Exception as e:
             messagebox.showerror("Error", f"Cannot be written to attr. config file: {e}")
             return
-        self.spustit_kontrolu()
+        self.run_check()
         messagebox.showinfo("Done", "The Attr. config file has been modified only for parameters 'areaL', 'areaR' a 'area'.")
 
 
-    def trimovany_prumer(self, hodnoty, trim_ratio):
-        hodnoty = [h for h in hodnoty if h is not None]
-        hodnoty = sorted(hodnoty)
-        n = len(hodnoty)
+    def trimmed_average(self, values, trim_ratio):
+        values = [h for h in values if h is not None]
+        values = sorted(values)
+        n = len(values)
         k = int(n * trim_ratio)
         if n < 2 * k + 1:
             return None
-        orezane = hodnoty[k:n - k]
-        return round(sum(orezane) / len(orezane), 3)
+        trimmed = values[k:n - k]
+        return round(sum(trimmed) / len(trimmed), 3)
 
 
-    def nacist_json(self):
+    def load_json(self):
             path = filedialog.askopenfilename(title="Select JSON file", filetypes=[("JSON files", "*.json")])
             if not path:
                 return
@@ -1057,11 +1057,11 @@ class PorovnaniApp:
                 with open(path, encoding="utf-8") as f:
                     data = json.load(f)
                 self.last_json = data
-                self.vykresli_json(data)
+                self.draw_json(data)
             except Exception as e:
                 messagebox.showerror("Error", f"cannot load json file: {e}")
 
-    def vykresli_json(self, data):
+    def draw_json(self, data):
         self.canvas_json.delete("all")
         scale = self.scale_value.get()
         layer_spacing = 30
@@ -1088,7 +1088,7 @@ class PorovnaniApp:
                         w, h = h, w
 
                     key = (layer_name, str(obj["objectId"]))
-                    status = self.status_agregace.get(key, "OK") if self.agregovat_stav.get() else self.vysledky_map.get(key, [{}])[0].get("status", "OK")
+                    status = self.aggregation_status.get(key, "OK") if self.aggregate_status.get() else self.results_map.get(key, [{}])[0].get("status", "OK")
                     fill_color = "#ff4d4d" if status == "NOK" else "#ffcc66" if status == "ERROR" else color
 
                     rect = self.canvas_json.create_rectangle(
@@ -1096,22 +1096,22 @@ class PorovnaniApp:
                         fill=fill_color, outline="black"
                     )
 
-                    # ✅ Vázání kliknutí na každý prvek, pokud má souborId a prvniHodnota
-                    sid = obj.get("souborId")
-                    ph = obj.get("prvniHodnota")
+                    # ✅ Bind click on each element if it has file_id and first_value
+                    sid = obj.get("file_id")
+                    ph = obj.get("first_value")
                     if sid and ph:
                         self.canvas_json.tag_bind(
                             rect,
                             "<Button-1>",
-                            lambda e, sid=sid, ph=ph: self.zpracuj_klik(event=e, soubor_id=sid, prvni_hodnota=ph)
+                            lambda e, sid=sid, ph=ph: self.handle_click(event=e, file_id=sid, first_value=ph)
                         )
 
                     self.canvas_json.create_text(
                         x_inner + w / 2, y_inner + h / 2,
                         text=obj["objectId"], font=("Consolas", 8)
                     )
-                    self.canvas_json.tag_bind(rect, "<Enter>", lambda e, k=key: self.zobraz_tooltip(e, k))
-                    self.canvas_json.tag_bind(rect, "<Leave>", self.skryt_tooltip)
+                    self.canvas_json.tag_bind(rect, "<Enter>", lambda e, k=key: self.show_tooltip(e, k))
+                    self.canvas_json.tag_bind(rect, "<Leave>", self.hide_tooltip)
 
                     if vertical:
                         y_inner += h + 10
@@ -1123,14 +1123,14 @@ class PorovnaniApp:
                 x_offset += max_w + 20 if vertical else x_inner - group_x + 20
 
 
-    def zobraz_tooltip(self, event, key):
-            fail_texts = [entry for entry in self.vysledky_map.get(key, []) if entry["status"] == "FAIL"]
+    def show_tooltip(self, event, key):
+            fail_texts = [entry for entry in self.results_map.get(key, []) if entry["status"] == "FAIL"]
             if not fail_texts:
                 return
 
             text = f"{key[0]} {key[1]}\n"
             for entry in fail_texts:
-                text += f"{entry['label']}: {entry['value']} MIMO rozsah ({entry['min']}–{entry['max']})\n"
+                text += f"{entry['label']}: {entry['value']} out of range ({entry['min']}–{entry['max']})\n"
 
             if self.tooltip:
                 self.tooltip.destroy()
@@ -1140,176 +1140,176 @@ class PorovnaniApp:
             label = tk.Label(self.tooltip, text=text.strip(), background="#ffffe0", relief="solid", borderwidth=1, font=("Segoe UI", 9))
             label.pack()
 
-    def skryt_tooltip(self, event):
+    def hide_tooltip(self, event):
             if self.tooltip:
                 self.tooltip.destroy()
                 self.tooltip = None
 
-    def dalsi_mereni(self):
+    def next_measurement(self):
         # use the minimum length across all data files so the chosen index exists in every file
         try:
-            max_index = min(len(r) for r in self.data_radky.values()) - 1
+            max_index = min(len(r) for r in self.data_rows.values()) - 1
         except Exception:
-            max_index = len(next(iter(self.data_radky.values()), [])) - 1
-        i = self.index_mereni + 1
+            max_index = len(next(iter(self.data_rows.values()), [])) - 1
+        i = self.measurement_index + 1
 
         while i <= max_index:
-            self.index_mereni = i
-            self.spustit_kontrolu()
+            self.measurement_index = i
+            self.run_check()
 
-            # ✅ Zjisti, zda je v měření alespoň jeden FAIL nebo ERROR
-            fail_detected = any(status in ("FAIL", "ERROR") for status, _, _ in self.vysledky)
+            # ✅ Check if there is at least one FAIL or ERROR in the measurement
+            fail_detected = any(s in ("FAIL", "ERROR") for s, _, _ in self.results)
 
-            self.mereni_label.config(text=f"Měření #{self.index_mereni + 1}")
-            self.obnovit_vystup()
+            self.measurement_label.config(text=f"Measurement #{self.measurement_index + 1}")
+            self.refresh_output()
 
-            if not self.pouze_fail.get() or fail_detected:
+            if not self.only_fail.get() or fail_detected:
                 break
             i += 1
 
-    def skok_na_zacatek(self):
-        self.index_mereni = 0
-        self.spustit_kontrolu()
-        self.mereni_label.config(text=f"Měření #{self.index_mereni + 1}")
-        self.obnovit_vystup()
+    def jump_to_start(self):
+        self.measurement_index = 0
+        self.run_check()
+        self.measurement_label.config(text=f"Measurement #{self.measurement_index + 1}")
+        self.refresh_output()
 
 
-    def skok_na_konec(self):
+    def jump_to_end(self):
         try:
-            self.index_mereni = min(len(r) for r in self.data_radky.values()) - 1
+            self.measurement_index = min(len(r) for r in self.data_rows.values()) - 1
         except Exception:
-            self.index_mereni = len(next(iter(self.data_radky.values()), [])) - 1
-        self.spustit_kontrolu()
-        self.mereni_label.config(text=f"Měření #{self.index_mereni + 1}")
-        self.obnovit_vystup()
+            self.measurement_index = len(next(iter(self.data_rows.values()), [])) - 1
+        self.run_check()
+        self.measurement_label.config(text=f"Measurement #{self.measurement_index + 1}")
+        self.refresh_output()
 
 
-    def exportuj_fail_obrazky(self):
-        if not self.adresar_obrazku:
+    def export_fail_images(self):
+        if not self.image_dir:
             messagebox.showwarning("Directory not set", "First, select the directory with images.")
             return
 
-        cilovy_adresar = filedialog.askdirectory(title="Select the destination directory for export")
-        if not cilovy_adresar:
+        target_dir = filedialog.askdirectory(title="Select the destination directory for export")
+        if not target_dir:
             return
 
-        exportovane_cesty = set()
-        nenalezeno = 0
+        exported_paths = set()
+        not_found = 0
 
-        for (layerName, objectId), entries in self.vysledky_map.items():
+        for (layerName, objectId), entries in self.results_map.items():
             for entry in entries:
                 if entry.get("status") != "FAIL":
                     continue
 
-                soubor_id = entry.get("souborId", "")
-                prvni_hodnota = str(entry.get("prvniHodnota", "")).zfill(5)
-                hledany_kod = f"C{soubor_id}"
+                file_id = entry.get("file_id", "")
+                first_value = str(entry.get("first_value", "")).zfill(5)
+                search_code = f"C{file_id}"
 
-                for filename in os.listdir(self.adresar_obrazku):
-                    if filename.lower().endswith(".png") and hledany_kod in filename and prvni_hodnota in filename:
-                        src_path = os.path.join(self.adresar_obrazku, filename)
-                        if src_path in exportovane_cesty:
-                            break  # už exportováno
+                for filename in os.listdir(self.image_dir):
+                    if filename.lower().endswith(".png") and search_code in filename and first_value in filename:
+                        src_path = os.path.join(self.image_dir, filename)
+                        if src_path in exported_paths:
+                            break  # already exported
 
-                        dst_path = os.path.join(cilovy_adresar, filename)
+                        dst_path = os.path.join(target_dir, filename)
                         try:
                             shutil.copy2(src_path, dst_path)
-                            exportovane_cesty.add(src_path)
+                            exported_paths.add(src_path)
                         except Exception:
-                            nenalezeno += 1
+                            not_found += 1
                         break
                 else:
-                    nenalezeno += 1
+                    not_found += 1
 
         messagebox.showinfo("Export finished",
-            f"✅ Images exported: {len(exportovane_cesty)}\n❌ Not found: {nenalezeno}")
+            f"✅ Images exported: {len(exported_paths)}\n❌ Not found: {not_found}")
 
 
-    def exportuj_vsechny_fail_obrazky(self):
-        if not self.adresar_obrazku:
+    def export_all_fail_images(self):
+        if not self.image_dir:
             messagebox.showwarning("Directory not set", "First, select the directory with images.")
             return
 
-        cilovy_adresar = filedialog.askdirectory(title="Select the destination directory for exporting all FAIL images")
-        if not cilovy_adresar:
+        target_dir = filedialog.askdirectory(title="Select the destination directory for exporting all FAIL images")
+        if not target_dir:
             return
 
-        max_index = len(next(iter(self.data_radky.values()), []))
-        exportovane_cesty = set()
-        nenalezeno = 0
+        max_index = len(next(iter(self.data_rows.values()), []))
+        exported_paths = set()
+        not_found = 0
 
         for i in range(max_index):
-            self.index_mereni = i
-            self.spustit_kontrolu()
+            self.measurement_index = i
+            self.run_check()
 
-            for (layerName, objectId), entries in self.vysledky_map.items():
+            for (layerName, objectId), entries in self.results_map.items():
                 for entry in entries:
                     if entry.get("status") != "FAIL":
                         continue
 
-                    soubor_id = entry.get("souborId", "")
-                    prvni_hodnota = str(entry.get("prvniHodnota", "")).zfill(5)
-                    hledany_kod = f"C{soubor_id}"
+                    file_id = entry.get("file_id", "")
+                    first_value = str(entry.get("first_value", "")).zfill(5)
+                    search_code = f"C{file_id}"
 
-                    for filename in os.listdir(self.adresar_obrazku):
-                        if filename.lower().endswith(".png") and hledany_kod in filename and prvni_hodnota in filename:
-                            src_path = os.path.join(self.adresar_obrazku, filename)
-                            if src_path in exportovane_cesty:
-                                break  # už exportováno
+                    for filename in os.listdir(self.image_dir):
+                        if filename.lower().endswith(".png") and search_code in filename and first_value in filename:
+                            src_path = os.path.join(self.image_dir, filename)
+                            if src_path in exported_paths:
+                                break  # already exported
 
-                            dst_path = os.path.join(cilovy_adresar, filename)
+                            dst_path = os.path.join(target_dir, filename)
                             try:
                                 shutil.copy2(src_path, dst_path)
-                                exportovane_cesty.add(src_path)
+                                exported_paths.add(src_path)
                             except Exception:
-                                nenalezeno += 1
+                                not_found += 1
                             break
                     else:
-                        nenalezeno += 1
+                        not_found += 1
 
         messagebox.showinfo("Export finished",
-            f"✅ Total images exported: {len(exportovane_cesty)}\n❌ Not found: {nenalezeno}")
+            f"✅ Total images exported: {len(exported_paths)}\n❌ Not found: {not_found}")
 
 
-    def predchozi_mereni(self):
-        i = self.index_mereni - 1
+    def prev_measurement(self):
+        i = self.measurement_index - 1
 
         while i >= 0:
-            self.index_mereni = i
-            self.spustit_kontrolu()
+            self.measurement_index = i
+            self.run_check()
 
-            fail_detected = any(status in ("FAIL", "ERROR") for status, _, _ in self.vysledky)
+            fail_detected = any(s in ("FAIL", "ERROR") for s, _, _ in self.results)
 
-            self.mereni_label.config(text=f"Measurement #{self.index_mereni + 1}")
-            self.obnovit_vystup()
+            self.measurement_label.config(text=f"Measurement #{self.measurement_index + 1}")
+            self.refresh_output()
 
-            if not self.pouze_fail.get() or fail_detected:
+            if not self.only_fail.get() or fail_detected:
                 break
             i -= 1
 
-    def pridej_hint(self, widget, text):
-        def zobraz_hint(event):
-            self.hint_okno = tk.Toplevel(widget)
-            self.hint_okno.wm_overrideredirect(True)
+    def add_hint(self, widget, text):
+        def show_hint(event):
+            self.hint_window = tk.Toplevel(widget)
+            self.hint_window.wm_overrideredirect(True)
             x = event.x_root + 10
             y = event.y_root + 10
-            self.hint_okno.wm_geometry(f"+{x}+{y}")
-            label = tk.Label(self.hint_okno, text=text, background="#ffffe0", relief="solid", borderwidth=1, font=("Segoe UI", 9))
+            self.hint_window.wm_geometry(f"+{x}+{y}")
+            label = tk.Label(self.hint_window, text=text, background="#ffffe0", relief="solid", borderwidth=1, font=("Segoe UI", 9))
             label.pack()
 
-        def skryt_hint(event):
-            if hasattr(self, "hint_okno") and self.hint_okno:
-                self.hint_okno.destroy()
-                self.hint_okno = None
+        def hide_hint(event):
+            if hasattr(self, "hint_window") and self.hint_window:
+                self.hint_window.destroy()
+                self.hint_window = None
 
-        widget.bind("<Enter>", zobraz_hint)
-        widget.bind("<Leave>", skryt_hint)
+        widget.bind("<Enter>", show_hint)
+        widget.bind("<Leave>", hide_hint)
 
-    def zobraz_zkratky(self):
-        okno = tk.Toplevel(self.root)
-        okno.title("🧭 Shortcuts")
-        okno.geometry("400x300")
-        okno.resizable(False, False)
+    def show_shortcuts(self):
+        window = tk.Toplevel(self.root)
+        window.title("🧭 Shortcuts")
+        window.geometry("400x300")
+        window.resizable(False, False)
 
         text = (
             "📋 Shortcuts:\n\n"
@@ -1321,10 +1321,10 @@ class PorovnaniApp:
             "• Ctrl + R → Run analysis\n"
         )
 
-        tk.Label(okno, text=text, justify="left", font=("Segoe UI", 10), padx=10, pady=10).pack()
+        tk.Label(window, text=text, justify="left", font=("Segoe UI", 10), padx=10, pady=10).pack()
 
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = PorovnaniApp(root)
+    app = ComparisonApp(root)
     root.mainloop()
